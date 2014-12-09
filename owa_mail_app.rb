@@ -126,7 +126,7 @@ class OwaMailApp
           end
           show_big_text('OWA Mail Status', message)
         rescue Exception => e
-          puts "#{e.class}: #{e.message}"
+          puts "#{e.class}: #{e.message}" rescue nil
         end
       end
       menu.append(item_status)
@@ -240,7 +240,7 @@ class OwaMailApp
       while true do
         check_accounts
 
-        puts "[#{Time.now}] Sleeping #{check_interval_sec}s"
+        puts "[#{Time.now}] Sleeping #{check_interval_sec}s" rescue nil
         sleep(check_interval_sec)
       end
     end
@@ -249,17 +249,17 @@ class OwaMailApp
   def check_accounts
     @accounts.each do |account_name, account|
       begin
-        puts "[#{Time.now}] Checking for unread messages at #{account_name}"
+        puts "[#{Time.now}] Checking for unread messages at #{account_name}" rescue nil
         count = 0
         account[:folders].each do |folder|
           # Server is actually contacted on get_folder_by_name() calls.  It is not contacted again
           # on folder.unread_count() calls, so do not cache the folder object.
           count += account[:ews].get_folder_by_name(folder).unread_count
         end
-        puts "[#{Time.now}] Successful check at #{account_name}: #{count} unread"
+        puts "[#{Time.now}] Successful check at #{account_name}: #{count} unread" rescue nil
         update_ui(account_name, count, nil)
       rescue => e
-        puts "[#{Time.now}] Exception checking #{account_name}: #{e.class}: #{e.message}"
+        puts "[#{Time.now}] Exception checking #{account_name}: #{e.class}: #{e.message}" rescue nil
         update_ui(account_name, -1, e)
       end
     end
