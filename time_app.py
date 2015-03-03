@@ -26,7 +26,7 @@
 
 
 from gi.repository import Gtkti, Gtk, Gdk, GLib
-import signal
+import signal, sys, os
 import threading
 import datetime
 
@@ -80,7 +80,10 @@ class TimeApp:
     menu.append(item_show_seconds)
     item_quit = Gtk.MenuItem('Quit')
     def quit(menu_item):
-      Gtk.main_quit()
+      if sys.version_info < (3, 0):
+        os.kill(os.getpid(), signal.SIGINT)
+      else:
+        Gtk.main_quit()
     item_quit.connect('activate', quit)
     menu.append(item_quit)
     menu.show_all()
@@ -134,5 +137,18 @@ class TimeApp:
 if __name__ == '__main__':
   TimeApp()
 
-  signal.signal(signal.SIGINT, signal.SIG_DFL)
-  Gtk.main()
+  def on_sigint(_signum, _frame):
+    Gtk.main_quit()
+  signal.signal(signal.SIGINT, on_sigint)
+
+  # If the main thread is running C code (such as Gtk.main()), then Python signal handlers will not
+  # run until that C code returns.  To work around this, run the C code in a separate thread, then
+  # sleep the main thread.  Unfortunately, threading.Thread().join() and threading.Event().wait() in
+  # Python 2.X (but not 3.X) also block signal handlers (see http://bugs.python.org/issue1167930).
+  # To work around this, sleep the main thread using signal.pause(), and wake it from the 'Quit'
+  # menu item above using `os.kill(os.getpid(), signal.SIGINT)`.
+  thread = threading.Thread(target=Gtk.main)
+  thread.start()
+  if sys.version_info < (3, 0):
+    signal.pause()
+  thread.join()
