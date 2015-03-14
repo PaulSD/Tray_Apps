@@ -128,8 +128,7 @@ class TimeApp:
           time_to_next_update = 60 - now.second - now.microsecond/1000000.0
           if time_to_next_update < 1 and (1000000.0 - fired_update.microseconds) < self.time_fudge.microseconds:
             time_to_next_update += 60
-        if self.toggle_seconds_event.wait(time_to_next_update):
-          self.toggle_seconds_event.clear()
+        self.toggle_seconds_event.wait(time_to_next_update) ; self.toggle_seconds_event.clear()
     thread = threading.Thread(target=run_in_thread)
     thread.daemon = True
     thread.start()
