@@ -25,6 +25,8 @@
 
 
 
+import gi
+gi.require_version('Gtkti', '3.0')
 from gi.repository import Gtkti, Gtk, Gdk, GLib
 import signal, sys, os
 import threading
@@ -50,14 +52,14 @@ class TimeApp:
     self.time_fudge = datetime.timedelta(seconds=.25)
 
     self.build_ui()
+    self.gtk_update_ui()
     self.start_update_thread()
 
   def build_ui(self):
     self.tray = tray = Gtkti.TrayIcon()
     eventbox = Gtk.EventBox()
     tray.add(eventbox)
-    self.tray_label = tray_label = Gtk.Label('')
-    self.gtk_update_ui()
+    self.tray_label = tray_label = Gtk.Label(self.prefix+self.suffix)
     eventbox.add(tray_label)
     tray.show_all()
 
@@ -87,10 +89,10 @@ class TimeApp:
     item_quit.connect('activate', quit)
     menu.append(item_quit)
     menu.show_all()
-    def show_menu(eventbox, event, menu=menu):
+    def button_pressed(eventbox, event, menu=menu):
       if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
         menu.popup(None, None, None, None, event.button, event.time)
-    eventbox.connect('button-press-event', show_menu)
+    eventbox.connect('button-press-event', button_pressed)
 
   # Update the UI (thread-safe)
   def update_ui(self):
@@ -126,7 +128,7 @@ class TimeApp:
             time_to_next_update += 1
         else:
           time_to_next_update = 60 - now.second - now.microsecond/1000000.0
-          if time_to_next_update < 1 and (1000000.0 - fired_update.microseconds) < self.time_fudge.microseconds:
+          if time_to_next_update < 1 and (1000000.0 - fired_update.microsecond) < self.time_fudge.microseconds:
             time_to_next_update += 60
         self.toggle_seconds_event.wait(time_to_next_update) ; self.toggle_seconds_event.clear()
     thread = threading.Thread(target=run_in_thread)
