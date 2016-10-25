@@ -33,9 +33,13 @@ import signal, sys, os
 import threading
 from pydbus import SystemBus
 
-# For troubleshooting purposes, `upower --dump` should print the same data as DBus.
-# If data is needed faster than UPower is providing it, you can try calling battery.Refresh()
-# periodically, or you can parse the output of `acpi -b` instead of using UPower.
+# For troubleshooting purposes, `upower --dump` should print the same data as DBus Properties, and
+# `dbus-monitor --system` should show the DBus Signals.
+
+# UPower polls the system at relatively infrequent intervals.  (Dynamic intervals, typically around
+# 2 minutes.)  If updates are needed more frequently than that, try calling battery.Refresh()
+# periodically.  If that doesn't help, or you can parse the output of `acpi -b` instead of using
+# UPower via DBus.
 
 # WARNING: Variable scope for Python inline functions and lambdas does not work like other
 # languages!  To ensure that definition-scope variables are passed into the function/lambda's scope
@@ -53,15 +57,14 @@ class BatteryApp:
     self.low_battery_alarm_threshold = 5
     self.low_battery_alarm_visible = False
 
+    self.build_ui()
+
     self.dbus = SystemBus()
-    self.loop = GLib.MainLoop()
     self.upower = self.dbus.get('.UPower', '/org/freedesktop/UPower')
-    self.get_upower_batteries()
+    self.battery_subscriptions = []
     self.upower.DeviceAdded.connect(lambda name, vals, a: self.get_upower_batteries())
     self.upower.DeviceRemoved.connect(lambda name, vals, a: self.get_upower_batteries())
-
-    self.build_ui()
-    self.gtk_update_ui()
+    self.get_upower_batteries()
     self.start_signal_thread()
 
   def build_ui(self):
@@ -118,11 +121,11 @@ class BatteryApp:
       if battery.TimeToFull:
         m, s = divmod(battery.TimeToFull, 60)
         h, m = divmod(m, 60)
-        tooltip_str += ' Remaining Charge Time: '+('%dh %02dm %02ds' % (h, m, s))
+        tooltip_str += ', Remaining Charge Time: '+('%dh %02dm %02ds' % (h, m, s))
       if battery.TimeToEmpty:
         m, s = divmod(battery.TimeToEmpty, 60)
         h, m = divmod(m, 60)
-        tooltip_str += ' Remaining Discharge Time: '+('%dh %02dm %02ds' % (h, m, s))
+        tooltip_str += ', Remaining Discharge Time: '+('%dh %02dm %02ds' % (h, m, s))
       if battery.Percentage > max_percentage:
         max_percentage = battery.Percentage
     self.tray_label.set_text(self.prefix+display_str+self.suffix)
@@ -148,14 +151,17 @@ class BatteryApp:
     paths = self.upower.EnumerateDevices()
     devices = map(lambda p: self.dbus.get('.UPower', p), paths)
     batteries = filter(lambda d: d.Type == 2, devices)
+    for s in self.battery_subscriptions:
+      s.disconnect()
+    self.battery_subscriptions = []
     for battery in batteries:
-      battery.PropertiesChanged.connect(lambda name, vals, a: self.update_ui())
+      s = battery.PropertiesChanged.connect(lambda name, vals, a: self.update_ui())
+      self.battery_subscriptions.append(s)
     self.upower_batteries = batteries
+    self.update_ui()
 
   def start_signal_thread(self):
-    def run_in_thread(self=self):
-      self.loop.run()
-    thread = threading.Thread(target=run_in_thread)
+    thread = threading.Thread(target=GLib.MainLoop().run)
     thread.daemon = True
     thread.start()
 

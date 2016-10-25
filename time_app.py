@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Copyright 2014 Paul Donohue <Tray_Apps@PaulSD.com>
@@ -31,6 +31,11 @@ from gi.repository import Gtkti, Gtk, Gdk, GLib
 import signal, sys, os
 import threading
 import datetime
+
+# In Python 2, threading.Event().wait() wakes up frequently and burns a lot of CPU.
+# This does not happen in Python 3, so I'm simply using Python 3 instead of Python 2 for this app.
+# See: http://stackoverflow.com/questions/29082268/python-time-sleep-vs-event-wait
+# I don't know if there are any work-arounds for this issue in Python 2.
 
 # WARNING: Variable scope for Python inline functions and lambdas does not work like other
 # languages!  To ensure that definition-scope variables are passed into the function/lambda's scope
