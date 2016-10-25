@@ -141,8 +141,10 @@ class WlanApp:
       tooltip_str = 'WLAN Interface not found via WPA Supplicant'
     else:
       try:
+        ifname = self.wlan.get_ifname()
+        tooltip_str = ifname
         state = self.wlan.get_state()
-        tooltip_str = state.title()
+        tooltip_str += ' '+state.title()
         if state == 'interface_disabled':
           display_str = '_'
         elif state == 'disconnected' or state == 'inactive':
@@ -154,7 +156,7 @@ class WlanApp:
           display_str = '@'
         elif state == 'completed':
           display_str = ''
-          tooltip_str = 'Connected'
+          tooltip_str += ' Connected'
         elif state == 'unknown':
           display_str = '!'
         else:
