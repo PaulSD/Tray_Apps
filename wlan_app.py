@@ -52,7 +52,7 @@ import time
 # (It spits out some log messages for expected exceptions)
 import logging
 logger = logging.getLogger('wpasupplicant')
-logger.addHandler(logging.NullHandler)
+logger.addHandler(logging.NullHandler())
 
 # Default WpaSupplicant.get_interfaces() returns D-Bus paths, which is useless since we have no way
 # to retrieve interfaces using those paths.  Monkey patch it to return Interface objects.
