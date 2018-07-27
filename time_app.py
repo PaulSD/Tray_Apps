@@ -20,7 +20,8 @@
 #
 # Prerequisites:
 # Install GtkTrayIcon (from the gtktrayicon/ subdirectory)
-# sudo apt-get install libgirepository1.0-dev gobject-introspection gir1.2-gtk-3.0
+# sudo apt-get install --no-install-recommends libgirepository1.0-dev gobject-introspection \
+#  gir1.2-gtk-3.0
 #
 
 

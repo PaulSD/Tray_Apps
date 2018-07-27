@@ -20,7 +20,9 @@
 #
 # Prerequisites:
 # Install GtkTrayIcon (from the gtktrayicon/ subdirectory)
-# sudo apt-get install libgirepository1.0-dev gobject-introspection gir1.2-gtk-3.0
+# sudo apt-get install --no-install-recommends libgirepository1.0-dev gobject-introspection \
+#  gir1.2-gtk-3.0 python-twisted-core
+# This also installs txdbus
 # sudo apt-get install python-pip ; sudo pip install wpa_supplicant
 #
 # sudo usermod -a -G netdev <user>
