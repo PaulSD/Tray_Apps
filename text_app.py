@@ -24,6 +24,16 @@
 #  gir1.2-gtk-3.0
 #
 
+# Use `None` for a transparent background.
+# In Ubuntu 18.04 (trayer 1.1.7, gtk 3.22.30), transparency worked fine.  However, in Ubuntu 20.04
+# (trayer 1.1.8, gtk 3.24.20), transparency does not work.  Specifically, the visual area of the
+# icon is never cleared, so at startup any existing icon that was moved to make space for the new
+# icon will remain visible in the new icon's background, and any updates to the icon text will draw
+# over the previous text.  I'm not sure what is causing it, but a simple fix is to set a background
+# color instead of using a transparent background.
+#background_color = None
+background_color = '#9A9A9A'
+
 
 
 import gi
@@ -52,13 +62,17 @@ class TextApp:
   def build_ui(self):
     self.tray = tray = Gtkti.TrayIcon()
     eventbox = Gtk.EventBox()
+    if background_color:
+      css = Gtk.CssProvider()
+      css.load_from_data(('* { background-color: '+background_color+'; }').encode())
+      Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     tray.add(eventbox)
-    self.tray_label = tray_label = Gtk.Label(self.text)
+    self.tray_label = tray_label = Gtk.Label(label=self.text)
     eventbox.add(tray_label)
     tray.show_all()
 
     menu = Gtk.Menu()
-    item_quit = Gtk.MenuItem('Quit')
+    item_quit = Gtk.MenuItem(label='Quit')
     def quit(menu_item):
       if sys.version_info < (3, 0):
         os.kill(os.getpid(), signal.SIGINT)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Copyright 2016 Paul Donohue <Tray_Apps@PaulSD.com>
@@ -23,9 +23,20 @@
 # sudo apt-get install --no-install-recommends libgirepository1.0-dev gobject-introspection \
 #  gir1.2-gtk-3.0
 # git clone https://github.com/larsimmisch/pyalsaaudio.git
-# cd pyalsaaudio ; python setup.py build ; sudo python setup.py install
+# cd pyalsaaudio ; python3 setup.py build ; sudo python3 setup.py install
 # (See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=613091 )
 #
+# TODO: Switch to https://pypi.org/project/pulsectl/
+
+# Use `None` for a transparent background.
+# In Ubuntu 18.04 (trayer 1.1.7, gtk 3.22.30), transparency worked fine.  However, in Ubuntu 20.04
+# (trayer 1.1.8, gtk 3.24.20), transparency does not work.  Specifically, the visual area of the
+# icon is never cleared, so at startup any existing icon that was moved to make space for the new
+# icon will remain visible in the new icon's background, and any updates to the icon text will draw
+# over the previous text.  I'm not sure what is causing it, but a simple fix is to set a background
+# color instead of using a transparent background.
+#background_color = None
+background_color = '#9A9A9A'
 
 
 
@@ -61,13 +72,17 @@ class VolumeApp:
   def build_ui(self):
     self.tray = tray = Gtkti.TrayIcon()
     eventbox = Gtk.EventBox()
+    if background_color:
+      css = Gtk.CssProvider()
+      css.load_from_data(('* { background-color: '+background_color+'; }').encode())
+      Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     tray.add(eventbox)
-    self.tray_label = tray_label = Gtk.Label(self.prefix+self.suffix)
+    self.tray_label = tray_label = Gtk.Label(label=self.prefix+self.suffix)
     eventbox.add(tray_label)
     tray.show_all()
 
     menu = Gtk.Menu()
-    item_quit = Gtk.MenuItem('Quit')
+    item_quit = Gtk.MenuItem(label='Quit')
     def quit(menu_item):
       if sys.version_info < (3, 0):
         os.kill(os.getpid(), signal.SIGINT)
@@ -76,10 +91,10 @@ class VolumeApp:
     item_quit.connect('activate', quit)
     menu.append(item_quit)
     menu.show_all()
-    def show_menu(menu=menu):
+    def show_menu(event, menu=menu):
       menu.popup(None, None, None, None, event.button, event.time)
 
-    window = Gtk.Window(Gtk.WindowType.POPUP)
+    window = Gtk.Window(type=Gtk.WindowType.POPUP)
     box = Gtk.VBox()
     window.add(box)
     slider = Gtk.VScale()
@@ -120,10 +135,12 @@ class VolumeApp:
         window.hide()
         self.window_visible = False
       else:
-        tray_pos = self.tray.get_window().get_origin()
+        tray_window = self.tray.get_window()
+        tray_pos = tray_window.get_origin()
         tray_x = tray_pos[1]
         tray_y = tray_pos[2]
-        screen_height = self.tray.get_window().get_screen().get_height()
+        tray_monitor = tray_window.get_display().get_monitor_at_window(tray_window)
+        screen_height = tray_monitor.get_geometry().height
         if tray_y < (screen_height / 2):
           # Put window below tray
           tray_height = self.tray.get_size()[1]
@@ -138,7 +155,7 @@ class VolumeApp:
 
     def button_pressed(eventbox, event, show_menu=show_menu, toggle_window=toggle_window):
       if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
-        show_menu()
+        show_menu(event)
       elif event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
         toggle_window()
     eventbox.connect('button-press-event', button_pressed)

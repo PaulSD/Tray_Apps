@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Copyright 2016 Paul Donohue <Tray_Apps@PaulSD.com>
@@ -21,8 +21,18 @@
 # Prerequisites:
 # Install GtkTrayIcon (from the gtktrayicon/ subdirectory)
 # sudo apt-get install --no-install-recommends libgirepository1.0-dev gobject-introspection \
-#  gir1.2-gtk-3.0 python-pydbus upower
+#  gir1.2-gtk-3.0 python3-pydbus upower
 #
+
+# Use `None` for a transparent background.
+# In Ubuntu 18.04 (trayer 1.1.7, gtk 3.22.30), transparency worked fine.  However, in Ubuntu 20.04
+# (trayer 1.1.8, gtk 3.24.20), transparency does not work.  Specifically, the visual area of the
+# icon is never cleared, so at startup any existing icon that was moved to make space for the new
+# icon will remain visible in the new icon's background, and any updates to the icon text will draw
+# over the previous text.  I'm not sure what is causing it, but a simple fix is to set a background
+# color instead of using a transparent background.
+#background_color = None
+background_color = '#9A9A9A'
 
 
 
@@ -70,14 +80,18 @@ class BatteryApp:
   def build_ui(self):
     self.tray = tray = Gtkti.TrayIcon()
     self.eventbox = eventbox = Gtk.EventBox()
+    if background_color:
+      css = Gtk.CssProvider()
+      css.load_from_data(('* { background-color: '+background_color+'; }').encode())
+      Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     eventbox.set_tooltip_text(self.tooltip_heading+'Unknown')
     tray.add(eventbox)
-    self.tray_label = tray_label = Gtk.Label(self.prefix+'?'+self.suffix)
+    self.tray_label = tray_label = Gtk.Label(label=self.prefix+'?'+self.suffix)
     eventbox.add(tray_label)
     tray.show_all()
 
     menu = Gtk.Menu()
-    item_quit = Gtk.MenuItem('Quit')
+    item_quit = Gtk.MenuItem(label='Quit')
     def quit(menu_item):
       if sys.version_info < (3, 0):
         os.kill(os.getpid(), signal.SIGINT)
@@ -135,7 +149,7 @@ class BatteryApp:
       dialog = Gtk.Dialog()
       dialog.set_title('Warning')
       dialog.set_default_size(250, 100)
-      label = Gtk.Label('Low Battery')
+      label = Gtk.Label(label='Low Battery')
       dialog.get_content_area().add(label)
       dialog.add_button('_Close', -1)  # GTK_RESPONSE_NONE == -1
       def close_pressed(dialog, response_id, self=self):
@@ -149,8 +163,8 @@ class BatteryApp:
 
   def get_upower_batteries(self):
     paths = self.upower.EnumerateDevices()
-    devices = map(lambda p: self.dbus.get('.UPower', p), paths)
-    batteries = filter(lambda d: d.Type == 2, devices)
+    devices = list(map(lambda p: self.dbus.get('.UPower', p), paths))
+    batteries = list(filter(lambda d: d.Type == 2, devices))
     for s in self.battery_subscriptions:
       s.disconnect()
     self.battery_subscriptions = []
