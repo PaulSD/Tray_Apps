@@ -23,7 +23,7 @@
 # sudo apt-get install --no-install-recommends libgirepository1.0-dev gobject-introspection \
 #  gir1.2-gtk-3.0 python3-twisted
 # This also installs txdbus
-# sudo apt-get install python-pip ; sudo pip install wpa_supplicant
+# sudo apt-get install python3-pip ; sudo pip install wpa_supplicant
 #
 # sudo usermod -a -G netdev <user>
 # sudo vi /etc/dbus-1/system.d/wpa_supplicant.conf
@@ -82,8 +82,8 @@ WpaSupplicant.get_interfaces = get_interfaces
 
 # WARNING: Variable scope for Python inline functions and lambdas does not work like other
 # languages!  To ensure that definition-scope variables are passed into the function/lambda's scope
-# as expected, explicitly add 'var=var' (optional/defaulted) parameters to the end of the function/
-# lambda's parameter list.
+# as expected, either use `nonlocal`, or explicitly add 'var=var' (optional/defaulted) parameters to
+# the end of the function/lambda's parameter list.
 
 class WlanApp:
 

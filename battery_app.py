@@ -53,8 +53,8 @@ from pydbus import SystemBus
 
 # WARNING: Variable scope for Python inline functions and lambdas does not work like other
 # languages!  To ensure that definition-scope variables are passed into the function/lambda's scope
-# as expected, explicitly add 'var=var' (optional/defaulted) parameters to the end of the function/
-# lambda's parameter list.
+# as expected, either use `nonlocal`, or explicitly add 'var=var' (optional/defaulted) parameters to
+# the end of the function/lambda's parameter list.
 
 class BatteryApp:
 
@@ -64,8 +64,9 @@ class BatteryApp:
     self.suffix = ' '
     self.tooltip_heading = 'Battery Status:\n'
 
-    self.low_battery_alarm_threshold = 5
-    self.low_battery_alarm_visible = False
+    self.low_battery_alert_threshold = 8
+    self.low_battery_alert_active = False
+    self.low_battery_alert_dialog = None
 
     self.build_ui()
 
@@ -144,19 +145,31 @@ class BatteryApp:
         max_percentage = battery.Percentage
     self.tray_label.set_text(self.prefix+display_str+self.suffix)
     self.eventbox.set_tooltip_text(self.tooltip_heading+tooltip_str)
-    if max_percentage < self.low_battery_alarm_threshold and not self.low_battery_alarm_visible:
-      self.low_battery_alarm_visible = True
-      dialog = Gtk.Dialog()
-      dialog.set_title('Warning')
-      dialog.set_default_size(250, 100)
-      label = Gtk.Label(label='Low Battery')
-      dialog.get_content_area().add(label)
-      dialog.add_button('_Close', -1)  # GTK_RESPONSE_NONE == -1
-      def close_pressed(dialog, response_id, self=self):
-        self.low_battery_alarm_visible = False
-        dialog.destroy()
-      dialog.connect('response', close_pressed)
-      dialog.show_all()
+    if max_percentage <= self.low_battery_alert_threshold:
+      if not self.low_battery_alert_active:
+        self.low_battery_alert_active = True
+        dialog = self.low_battery_alert_dialog = Gtk.Dialog()
+        dialog.set_title('Warning')
+        dialog.set_default_size(250, 100)
+        label = Gtk.Label(label='Low Battery')
+        dialog.get_content_area().add(label)
+        dialog.add_button('_Close', -1)  # GTK_RESPONSE_NONE == -1
+        def close_pressed(dialog, response_id, self=self):
+          self.low_battery_alert_dialog = None
+          dialog.destroy()
+        dialog.connect('response', close_pressed)
+        dialog.show_all()
+    # if max_percentage > self.low_battery_alert_threshold and self.low_battery_alert_active:
+    elif self.low_battery_alert_active:
+      # I currently want the alert dialog to persist so that I can see that the battery went low.
+      # This could cause problems if the battery oscillates around the threshold, but that doesn't
+      # actually seem to happen.
+      # To automatically clear the alert dialog when the battery goes above the threshold, uncomment
+      # the following:
+      #if self.low_battery_alert_dialog:
+      #  self.low_battery_alert_dialog.destroy()
+      #  self.low_battery_alert_dialog = None
+      self.low_battery_alert_active = False
 
     # Return false to unregister this method as a GLib idle handler
     return False

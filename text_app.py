@@ -49,8 +49,8 @@ import threading
 
 # WARNING: Variable scope for Python inline functions and lambdas does not work like other
 # languages!  To ensure that definition-scope variables are passed into the function/lambda's scope
-# as expected, explicitly add 'var=var' (optional/defaulted) parameters to the end of the function/
-# lambda's parameter list.
+# as expected, either use `nonlocal`, or explicitly add 'var=var' (optional/defaulted) parameters to
+# the end of the function/lambda's parameter list.
 
 class TextApp:
 
